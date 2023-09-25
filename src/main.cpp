@@ -9,41 +9,77 @@ using namespace std;
 
 RenderWindow window(VideoMode(822, 622), "Tic-Tac-Toe", Style::Close | Style::Titlebar);
 
+
 class Game{
 private:
-
-    Sprite grid[3][3];
-    Sprite boardGrid;
-    Texture gridTexture;
+    Texture gridEmptyTexture;
+    Texture boardTexture;
+    Texture cross;
+    Texture circle;
+    Font font;
+    string msg;
     const char human = 'O';
     const char ai = 'X';
-    char board[3][3];
-    enum Player { HUMAN, AI };
 
     struct Move {
 	    int x;
 	    int y;
     };
 public:
-    Game(){
-        gridTexture.loadFromFile("assets/Grid.png");
-        boardGrid.setTexture(gridTexture);
-        // boardGrid.setOrigin(Vector2f(boardGrid.getLocalBounds().width / 2, boardGrid.getLocalBounds().height / 2));
-        // boardGrid.setPosition(315, 415);
-    }
+    int turn;
+     Text win;
+    enum Player { HUMAN, AI };
+    char board[3][3];
+    Sprite grid[3][3];
+    Sprite boardGrid;
+    void playBoard(Vector2f pos);
+    void initializeBoard();
+    bool checkWinner(char board[3][3],Player player);
+    int score(char board[3][3]);
+    bool gameOver(char board[3][3]);
+    void playerMove(Sprite grid[3][3]);
+    int minimax(char board[3][3], int depth,int alpha, int beta, bool isAI);
+    Move AIMove(char board[3][3]);
+    void run();
 
-    void initializeBoard(){
-        for(int i=0; i<3; i++) {
-            for(int j=0; j<3; j++) {
-                board[i][j]= '-';
+};
+
+    void Game::initializeBoard(){
+        //board
+        boardTexture.loadFromFile("assets/Grid.png");
+        boardGrid.setTexture(boardTexture);
+        //grid
+        gridEmptyTexture.loadFromFile("assets/Nothing.png");
+        //cross/circle
+        cross.loadFromFile("assets/cross.png");
+        circle.loadFromFile("assets/circle.png");
+        //text
+        font.loadFromFile("assets/font.ttf");
+        win.setFont(font);
+        win.setCharacterSize(55);
+        win.setFillColor(Color::Black);
+        win.setPosition(Vector2f(600.0f,50.0f)); 
+
+        for(int i = 0; i <3; i++){
+            for(int j= 0; j <3 ;j++){
+                board[i][j]='-';
+                grid[i][j].setTexture(gridEmptyTexture);
+                grid[i][j].setScale(1,1);
+                grid[i][j].setPosition(Vector2f(200.0f*i+10.0f*i,200.0f*j+10.0f*j));
             }
         }
+        turn=0;
+        // for(int i=0; i<3; i++) {
+        //     for(int j=0; j<3; j++) {
+        //         board[i][j]= '-';
+        //     }
+        // }
     }
 
-    bool checkWinner(char board[3][3],Player player){
+    bool Game::checkWinner(char board[3][3],Player player){
         char currentPlayer;
-        if(player==HUMAN) currentPlayer = human;
-        else currentPlayer = ai;
+        if(player==HUMAN) currentPlayer = this->human;
+        else currentPlayer = this->ai;
 
         for(int i=0; i<3; i++) {
             // horizontal
@@ -59,13 +95,13 @@ public:
         return false;
     }
 
-    int score(char board[3][3]) {
+    int Game::score(char board[3][3]) {
         if(checkWinner(board, HUMAN)) return -10;
         else if(checkWinner(board, AI)) return 10;
         return 0; 
     }
 
-    bool gameOver(char board[3][3]) {
+    bool Game::gameOver(char board[3][3]) {
         if(checkWinner(board, HUMAN)) return true;
         else if(checkWinner(board, AI)) return true;
 
@@ -77,34 +113,43 @@ public:
         return !emptySpace;
     }
 
-    void printBoard(char board[3][3]) {
-        cout << "-------------------";
-        for(int i=0; i<3; i++) {
-            cout<< '\n'<< "|";
-            for(int j=0; j<3; j++) {
-                cout<< "  "<<board[i][j]<<" "<< " |";
-            }
-        }
-        cout<<'\n'<< "-------------------"<<'\n';
-    }
+    // void Game::printBoard() {
+    //     window.clear(Color::White);
+    //         for(int i=0;i<3;i++){
+    //             for(int j=0;j<3;j++){
+    //                 window.draw(grid[i][j]);
+    //             }
+    //         }
+    //         window.draw(boardGrid);
+        
+    //     // cout << "-------------------";
+    //     // for(int i=0; i<3; i++) {
+    //     //     cout<< '\n'<< "|";
+    //     //     for(int j=0; j<3; j++) {
+    //     //         cout<< "  "<<board[i][j]<<" "<< " |";
+    //     //     }
+    //     // }
+    //     // cout<<'\n'<< "-------------------"<<'\n';
+    // }
 
-    void playerMove(char board[3][3]){
-        int i=0; //from 1 to 9
-        while(i<1 || i>9){
-            cout<<"Enter your move from 1 to 9:"<<endl;
-            cin>>i;
-            if(board[(i-1)/3][(i-1)%3]!='-'){
-                i=0;
-                cout<<"Enter valid move"<<endl;
-            }
-        }
-        int x=(i-1)/3;
-        int y=(i-1)%3;
+    // void Game::playerMove(char board[3][3]){
+    //     int i=0; //from 1 to 9
+    //     while(i<1 || i>9){
+    //         cout<<"Enter your move from 1 to 9:"<<endl;
+    //         cin>>i;
+    //         if(board[(i-1)/3][(i-1)%3]!='-'){
+    //             i=0;
+    //             cout<<"Enter valid move"<<endl;
+    //         }
+    //     }
+    //     int x=(i-1)/3;
+    //     int y=(i-1)%3;
 
-        board[x][y] = human;
-    }
+    //     board[x][y] = human;
+    //     grid[x][y].setColor(sf::Color::Black);
+    // }
 
-    int minimax(char board[3][3], int depth,int alpha, int beta, bool isAI){
+    int Game::minimax(char board[3][3], int depth,int alpha, int beta, bool isAI){
         int tScore =0, bestScore =0;
         if(gameOver(board)) return score(board);
 
@@ -112,10 +157,10 @@ public:
             bestScore = INT_MIN;
             for(int i=0; i<3; i++){
                 for(int j=0; j<3; j++){
-                    if(board[i][j]=='-'){
-                        board[i][j] = ai;
+                    if(this->board[i][j]=='-'){
+                        this->board[i][j] = ai;
                         tScore = minimax(board, depth+1, alpha, beta, false);
-                        board[i][j] = '-';
+                        this->board[i][j] = '-';
 
                         bestScore = max(tScore, bestScore);
                         alpha=max(alpha, bestScore);
@@ -128,10 +173,10 @@ public:
         bestScore =INT_MAX;
         for(int i=0; i<3; i++){
             for(int j=0; j<3; j++){
-                if(board[i][j]=='-'){
-                    board[i][j] = human;
+                if(this->board[i][j]=='-'){
+                    this->board[i][j] = human;
                     tScore = minimax(board, depth+1, alpha, beta, true);
-                    board[i][j] = '-';
+                    this->board[i][j] = '-';
 
                     bestScore=min(tScore,bestScore);
                     beta=min(beta, bestScore);
@@ -142,7 +187,7 @@ public:
         return bestScore;
     }
 
-    Move AIMove(char board[3][3]){
+    Game::Move Game::AIMove(char board[3][3]){
         int tScore =0, bestScore =INT_MIN;
         Move bestMove;
 
@@ -163,51 +208,84 @@ public:
         return bestMove;
     }
 
-    void run(){
-        while (window.isOpen())
+    // // void Game::run(){
+    // //     while (window.isOpen())
+    // //     {
+    // //         // check all the window's events that were triggered since the last iteration of the loop
+    // //         sf::Event event;
+    // //         while (window.pollEvent(event))
+    // //         {
+    // //             if (event.type == sf::Event::Closed)
+    // //                 window.close();
+    // //         }
+    // //         printBoard();
+    // //         window.display();
+    // //     }
+    // // }
+
+    void Game::playBoard(Vector2f pos){
+        //.getTexture() FOR WHILE
+        //while(!checkWinner(this->board,HUMAN) && !checkWinner(this->board,AI)){
+            //if(turn % 2 == 0){
+                // playerMove(this->grid);
+                for(int i=0;i<3;i++){
+                    for(int j=0;j<3;j++){
+                        if(this->grid[i][j].getGlobalBounds().contains(pos)){
+                            this->grid[i][j].setTexture(this->circle);
+                            this->board[i][j]=this->human;
+                            if(checkWinner(this->board,HUMAN)){
+                                this->msg="Human Wins!";
+                                this->win.setString(this->msg);
+                            };
+                            turn++;
+                        }
+                    }
+                // printBoard(board);
+                }
+            // else{
+                Move AImove = AIMove(board);
+                this->board[AImove.x][AImove.y] = ai;
+                this->grid[AImove.x][AImove.y].setTexture(this->cross);
+                if(checkWinner(this->board,AI)){
+                     this->msg="AI Wins!";
+                    this->win.setString(this->msg);
+                }
+                turn++;
+            //     // printBoard(board);
+            // }
+            //}
+        //}
+    }
+
+int main()
+{
+    Game game;
+    // game.playBoard();
+    game.initializeBoard();
+
+    while (window.isOpen())
         {
+            window.clear(Color::White);
+            for(int i=0; i<3;i++){
+                for(int j=0; j<3; j++){
+                    window.draw(game.grid[i][j]);
+                }
+            }
+            window.draw(game.boardGrid);
+            window.draw(game.win);
             // check all the window's events that were triggered since the last iteration of the loop
             sf::Event event;
             while (window.pollEvent(event))
             {
                 if (event.type == sf::Event::Closed)
                     window.close();
+                
+                if (event.type == sf::Event::MouseButtonPressed)
+				    if(event.mouseButton.button == sf::Mouse::Button::Left)
+					    game.playBoard(window.mapPixelToCoords(sf::Mouse::getPosition(window)));
             }
-            window.clear(Color(240, 212, 58));
-            window.draw(boardGrid);
+            // printBoard();
             window.display();
         }
-    }
-
-    void playBoard(){
-        initializeBoard();
-        int turn = 0;
-        printBoard(board);
-
-        while(!checkWinner(board,HUMAN) && !checkWinner(board,AI) && !gameOver(board)){
-            if(turn % 2 == 0){
-                playerMove(board);
-                if(checkWinner(board,HUMAN)) cout<<"Player won";
-                turn++;
-                printBoard(board);
-            }else{
-                cout<<"AI move";
-                Move AImove = AIMove(board);
-                board[AImove.x][AImove.y] = ai;
-                if(checkWinner(board,AI)) cout<<"AI won";
-                turn++;
-                printBoard(board);
-            }
-        }
-    }
-
-};
-
-int main()
-{
-    Game game;
-    game.run();
-	// game.playBoard();
-
 	return 0;
 }

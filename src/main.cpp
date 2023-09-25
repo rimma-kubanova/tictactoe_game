@@ -3,12 +3,15 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <mainmenu.hpp>
+#include <GameOver.hpp>
 
 using namespace sf;
 using namespace std;
 
 RenderWindow window(VideoMode(822, 622), "Tic-Tac-Toe", Style::Close | Style::Titlebar);
-
+MainMenu menu;
+GameOver gameover;
 
 class Game{
 private:
@@ -27,11 +30,16 @@ private:
     };
 public:
     int turn;
-     Text win;
+    Text win;
+    Text scoreText;
+    Text AIscore;
+    Text Humanscore;
+    Text resetText;
     enum Player { HUMAN, AI };
     char board[3][3];
     Sprite grid[3][3];
     Sprite boardGrid;
+    RectangleShape resetButton;
     void playBoard(Vector2f pos);
     void initializeBoard();
     bool checkWinner(char board[3][3],Player player);
@@ -41,7 +49,8 @@ public:
     int minimax(char board[3][3], int depth,int alpha, int beta, bool isAI);
     Move AIMove(char board[3][3]);
     void run();
-
+    void reset();
+    void AIMove();
 };
 
     void Game::initializeBoard(){
@@ -55,10 +64,39 @@ public:
         circle.loadFromFile("assets/circle.png");
         //text
         font.loadFromFile("assets/font.ttf");
+
+        scoreText.setFont(font);
+        scoreText.setString("Score:");
+        scoreText.setFillColor(Color::Black);
+        scoreText.setPosition(Vector2f(681.0f,30.0f));
+
+        AIscore.setFont(font);
+        AIscore.setString("3");
+        AIscore.setFillColor(Color::Black);
+        AIscore.setPosition(Vector2f(681.0f,100.0f));
+
+        Humanscore.setFont(font);
+        Humanscore.setString("0");
+        Humanscore.setFillColor(Color::Black);
+        Humanscore.setPosition(Vector2f(681.0f,200.0f));
+
+        resetText.setFont(font);
+        resetText.setString("Reset!");
+        resetText.setFillColor(Color::Black);
+        resetText.setOrigin(resetText.getLocalBounds().width/2, resetText.getLocalBounds().height/2);
+        resetText.setPosition(Vector2f(411.0f,400.0f));
+
         win.setFont(font);
         win.setCharacterSize(55);
         win.setFillColor(Color::Black);
-        win.setPosition(Vector2f(600.0f,50.0f)); 
+        win.setOrigin(win.getLocalBounds().width/2, win.getLocalBounds().height/2);
+        win.setPosition(Vector2f(321.0f,250.0f));
+
+        //gameover
+        resetButton.setFillColor(Color::Red);
+        resetButton.setSize(Vector2f(200.0f,100.0f));
+        resetButton.setOrigin(resetButton.getLocalBounds().width/2, resetButton.getLocalBounds().height/2);
+        resetButton.setPosition(Vector2f(411.0f,400.0f));
 
         for(int i = 0; i <3; i++){
             for(int j= 0; j <3 ;j++){
@@ -69,11 +107,6 @@ public:
             }
         }
         turn=0;
-        // for(int i=0; i<3; i++) {
-        //     for(int j=0; j<3; j++) {
-        //         board[i][j]= '-';
-        //     }
-        // }
     }
 
     bool Game::checkWinner(char board[3][3],Player player){
@@ -112,42 +145,6 @@ public:
         }
         return !emptySpace;
     }
-
-    // void Game::printBoard() {
-    //     window.clear(Color::White);
-    //         for(int i=0;i<3;i++){
-    //             for(int j=0;j<3;j++){
-    //                 window.draw(grid[i][j]);
-    //             }
-    //         }
-    //         window.draw(boardGrid);
-        
-    //     // cout << "-------------------";
-    //     // for(int i=0; i<3; i++) {
-    //     //     cout<< '\n'<< "|";
-    //     //     for(int j=0; j<3; j++) {
-    //     //         cout<< "  "<<board[i][j]<<" "<< " |";
-    //     //     }
-    //     // }
-    //     // cout<<'\n'<< "-------------------"<<'\n';
-    // }
-
-    // void Game::playerMove(char board[3][3]){
-    //     int i=0; //from 1 to 9
-    //     while(i<1 || i>9){
-    //         cout<<"Enter your move from 1 to 9:"<<endl;
-    //         cin>>i;
-    //         if(board[(i-1)/3][(i-1)%3]!='-'){
-    //             i=0;
-    //             cout<<"Enter valid move"<<endl;
-    //         }
-    //     }
-    //     int x=(i-1)/3;
-    //     int y=(i-1)%3;
-
-    //     board[x][y] = human;
-    //     grid[x][y].setColor(sf::Color::Black);
-    // }
 
     int Game::minimax(char board[3][3], int depth,int alpha, int beta, bool isAI){
         int tScore =0, bestScore =0;
@@ -208,83 +205,114 @@ public:
         return bestMove;
     }
 
-    // // void Game::run(){
-    // //     while (window.isOpen())
-    // //     {
-    // //         // check all the window's events that were triggered since the last iteration of the loop
-    // //         sf::Event event;
-    // //         while (window.pollEvent(event))
-    // //         {
-    // //             if (event.type == sf::Event::Closed)
-    // //                 window.close();
-    // //         }
-    // //         printBoard();
-    // //         window.display();
-    // //     }
-    // // }
+    void Game::reset(){
+        for(int i=0; i<3;i++){
+            for(int j=0; j<3; j++){
+                board[i][j] = '-';
+                grid[i][j].setTexture(gridEmptyTexture);
+            }
+        }
+        win.setString("");
+        turn=0;
+        gameover.setGameOver(false);
+    }
+
+    void Game::AIMove(){
+        Move AImove = AIMove(board);
+        this->board[AImove.x][AImove.y] = ai;
+        this->grid[AImove.x][AImove.y].setTexture(this->cross);
+        if(checkWinner(this->board,AI)){
+            this->msg="AI Wins!";
+            this->win.setString(this->msg);
+            gameover.setGameOver(true);
+        }
+        turn++;
+    }
 
     void Game::playBoard(Vector2f pos){
-        //.getTexture() FOR WHILE
-        //while(!checkWinner(this->board,HUMAN) && !checkWinner(this->board,AI)){
-            //if(turn % 2 == 0){
-                // playerMove(this->grid);
-                for(int i=0;i<3;i++){
-                    for(int j=0;j<3;j++){
-                        if(this->grid[i][j].getGlobalBounds().contains(pos)){
-                            this->grid[i][j].setTexture(this->circle);
-                            this->board[i][j]=this->human;
-                            if(checkWinner(this->board,HUMAN)){
-                                this->msg="Human Wins!";
-                                this->win.setString(this->msg);
-                            };
-                            turn++;
-                        }
-                    }
-                // printBoard(board);
+        if(this->resetButton.getGlobalBounds().contains(pos)){
+            reset();
+            return;
+        }
+        for(int i=0;i<3;i++){
+            for(int j=0;j<3;j++){
+                if(this->grid[i][j].getGlobalBounds().contains(pos) && this->board[i][j]=='-')
+                {
+                    this->grid[i][j].setTexture(this->circle);
+                    this->board[i][j]=this->human;
+                    if(checkWinner(this->board,HUMAN)){
+                        this->msg="Human Wins!";
+                        this->win.setString(this->msg);
+                        gameover.setGameOver(true);
+                    };
+                    turn++;
+
+                    if(turn==9){
+                        this->msg="Draw!";
+                        this->win.setString(this->msg);
+                        gameover.setGameOver(true);
+                    }else
+                        AIMove();
                 }
-            // else{
-                Move AImove = AIMove(board);
-                this->board[AImove.x][AImove.y] = ai;
-                this->grid[AImove.x][AImove.y].setTexture(this->cross);
-                if(checkWinner(this->board,AI)){
-                     this->msg="AI Wins!";
-                    this->win.setString(this->msg);
-                }
-                turn++;
-            //     // printBoard(board);
-            // }
-            //}
-        //}
-    }
+            }
+        }
+}
 
 int main()
 {
     Game game;
-    // game.playBoard();
+
     game.initializeBoard();
 
     while (window.isOpen())
         {
-            window.clear(Color::White);
-            for(int i=0; i<3;i++){
-                for(int j=0; j<3; j++){
-                    window.draw(game.grid[i][j]);
-                }
+            if(menu.isMenuOpen()){
+                window.draw(menu.textMainMenu);
+                window.draw(menu.playButton);
+                window.draw(menu.exitButton);
+                window.draw(menu.textPlay);
+                window.draw(menu.textExit);
+            }else if(gameover.isGameOver())
+            {
+                window.draw(gameover.screen);
+                window.draw(gameover.gameOverText);
+                window.draw(game.win);
+                window.draw(game.resetButton);
+                window.draw(game.resetText);
             }
-            window.draw(game.boardGrid);
-            window.draw(game.win);
+            else{
+                window.clear(Color::White);
+                for(int i=0; i<3;i++){
+                    for(int j=0; j<3; j++){
+                        window.draw(game.grid[i][j]);
+                    }
+                }
+                window.draw(game.boardGrid);
+                window.draw(game.scoreText);
+                window.draw(game.AIscore);
+                window.draw(game.Humanscore);
+                // window.draw(game.win);
+            }
             // check all the window's events that were triggered since the last iteration of the loop
             sf::Event event;
             while (window.pollEvent(event))
             {
-                if (event.type == sf::Event::Closed)
-                    window.close();
+                if (event.type == sf::Event::Closed) window.close();
                 
-                if (event.type == sf::Event::MouseButtonPressed)
-				    if(event.mouseButton.button == sf::Mouse::Button::Left)
-					    game.playBoard(window.mapPixelToCoords(sf::Mouse::getPosition(window)));
+                if (event.type == sf::Event::MouseButtonPressed){
+				    if(event.mouseButton.button == sf::Mouse::Button::Left){
+                        if(menu.isMenuOpen()){
+                            if(menu.playButton.getGlobalBounds().contains(Mouse::getPosition(window).x,Mouse::getPosition(window).y)){
+                                menu.HideMenu();
+    
+                            }else if(menu.exitButton.getGlobalBounds().contains(Mouse::getPosition(window).x,Mouse::getPosition(window).y)){
+                                window.close();
+                            }
+                        }else
+					        game.playBoard(window.mapPixelToCoords(sf::Mouse::getPosition(window)));
+                    }
+                }
             }
-            // printBoard();
             window.display();
         }
 	return 0;

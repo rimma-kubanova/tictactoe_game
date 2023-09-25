@@ -3,6 +3,8 @@
 To start the game first download SFML library
 
 ## General info
+<img width="821" alt="Screenshot 2023-09-25 at 20 55 10" src="https://github.com/rimma-kubanova/tictactoe_game/assets/115300909/f7b83322-7a5e-441a-873d-bd1d543c023d">
+
 Tic-Tac-Toe Game with AI as an opponent. Written in C++, used minimax algorithm for AI, SFML library for Graphics
 	
 ## Technologies
